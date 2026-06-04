@@ -1,0 +1,166 @@
+{% extends "main/layout.html" %}
+{% block title %}Habits – Momentum{% endblock %}
+{% block page_name %}Habits{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+  <h1 class="page-title">Habits</h1>
+  <button class="btn-primary" id="openAddHabit"><i class="fa-solid fa-plus"></i> Add Habit</button>
+</div>
+
+<!-- Filter Tabs -->
+<div class="filter-tabs">
+  <button class="filter-tab active" data-hfilter="all">All</button>
+  <button class="filter-tab" data-hfilter="today">Due Today</button>
+  <button class="filter-tab" data-hfilter="daily">Daily</button>
+  <button class="filter-tab" data-hfilter="interval">Interval</button>
+  <button class="filter-tab" data-hfilter="weekdays">Weekdays</button>
+</div>
+
+<!-- Habits Grid -->
+<div class="habits-grid" id="habitsGrid">
+  {% for h in habit_data %}
+  <div class="habit-card"
+       data-id="{{ h.id }}"
+       data-freq="{{ h.frequency_type }}"
+       data-due="{{ 'true' if h.is_due_today else 'false' }}">
+
+    <div class="habit-card-top">
+      <div class="habit-icon" style="background:{{ h.color }}22;color:{{ h.color }}">
+        <i class="{{ h.icon }}"></i>
+      </div>
+      <div class="habit-card-info">
+        <div class="habit-name">{{ h.name }}</div>
+        <div class="habit-freq">
+          {% if h.frequency_type == 'daily' %}Daily
+          {% elif h.frequency_type == 'interval' %}Every {{ h.interval_days }} days
+          {% elif h.frequency_type == 'weekdays' %}
+            {% set day_names = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'] %}
+            {% if h.weekdays %}
+              {% for d in h.weekdays.split(',') %}{{ day_names[d|int] }}{% if not loop.last %}, {% endif %}{% endfor %}
+            {% else %}Custom{% endif %}
+          {% endif %}
+        </div>
+      </div>
+      <div class="habit-actions">
+        <button class="habit-action-btn" onclick="deleteHabit(event, {{ h.id }})" title="Delete habit">
+          <i class="fa-solid fa-trash"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="habit-stats-row">
+      <div class="habit-stat">
+        <div class="habit-stat-val habit-streak">{{ h.streak }}</div>
+        <div class="habit-stat-lbl"><i class="fa-solid fa-fire" style="color:#f97316;"></i> Streak</div>
+      </div>
+      <div class="habit-stat">
+        <div class="habit-stat-val habit-rate">{{ h.rate }}%</div>
+        <div class="habit-stat-lbl">30-day rate</div>
+      </div>
+    </div>
+
+    <!-- Progress bar -->
+    <div class="habit-progress-bar">
+      <div class="habit-progress-fill" style="width:{{ h.rate }}%;background:{{ h.color }};"></div>
+    </div>
+
+    <!-- 30-day heatmap -->
+    <div class="habit-heatmap">
+      {% for cell in h.heatmap %}
+      <div class="heatmap-dot {% if cell.done %}done{% endif %}" title="{{ cell.date }}"
+           style="{% if cell.done %}background:{{ h.color }}{% endif %}"></div>
+      {% endfor %}
+    </div>
+
+    <!-- Check-in button -->
+    {% if h.is_due_today %}
+    <button class="habit-check-btn {% if h.done_today %}done{% endif %}"
+            onclick="toggleHabitToday(this, {{ h.id }})">
+      <i class="fa-solid {{ 'fa-circle-check' if h.done_today else 'fa-circle' }}"></i>
+      {{ 'Done today!' if h.done_today else 'Mark as done' }}
+    </button>
+    {% else %}
+    <div style="text-align:center;font-size:.8rem;color:var(--text-muted);padding:8px 0;">Not due today</div>
+    {% endif %}
+
+  </div>
+  {% else %}
+  <div class="empty-state" id="emptyHabits" style="grid-column:1/-1">
+    <i class="fa-solid fa-fire"></i>
+    <p>No habits yet. Build your first streak!</p>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Add Habit Modal -->
+<div class="modal-overlay" id="habitModal">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <h2>New Habit</h2>
+      <button class="modal-close" onclick="closeModal('habitModal')"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+
+    <div class="modal-field">
+      <label for="habitName">Habit name</label>
+      <input type="text" id="habitName" placeholder="e.g. Morning run" autocomplete="off" maxlength="100">
+    </div>
+
+    <div class="modal-field">
+      <label>Frequency</label>
+      <div class="filter-tabs" id="freqTabs" style="margin-bottom:0">
+        <button type="button" class="freq-tab filter-tab active" data-freq="daily">Daily</button>
+        <button type="button" class="freq-tab filter-tab" data-freq="weekdays">Weekdays</button>
+        <button type="button" class="freq-tab filter-tab" data-freq="interval">Interval</button>
+      </div>
+    </div>
+
+    <div class="modal-field" id="weekdayPicker" style="display:none">
+      <label>Which days?</label>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+        {% for i, d in [(0,'Mon'),(1,'Tue'),(2,'Wed'),(3,'Thu'),(4,'Fri'),(5,'Sat'),(6,'Sun')] %}
+        <button type="button" class="wd-btn filter-tab" data-day="{{ i }}">{{ d }}</button>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="modal-field" id="intervalPicker" style="display:none">
+      <label for="intervalDays">Every how many days?</label>
+      <input type="number" id="intervalDays" class="form-input" min="2" max="365" value="7">
+    </div>
+
+    <div class="modal-field">
+      <label for="habitIcon">Icon (Font Awesome class)</label>
+      <input type="text" id="habitIcon" class="form-input" value="fa-solid fa-star" placeholder="fa-solid fa-star">
+    </div>
+
+    <div class="modal-field">
+      <label>Color</label>
+      <div class="color-swatches">
+        {% for color in ['#5b6ef5','#7c5cff','#22c55e','#f59e0b','#ef4444','#06b6d4','#ec4899','#f97316'] %}
+        <div class="color-swatch {% if loop.first %}active{% endif %}"
+             data-color="{{ color }}"
+             style="background:{{ color }}"
+             title="{{ color }}"></div>
+        {% endfor %}
+      </div>
+      <input type="hidden" id="habitColor" value="#5b6ef5">
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal('habitModal')">Cancel</button>
+      <button class="btn-primary" id="saveHabit">Create</button>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  window.HABITS_TODAY = '{{ today }}';
+</script>
+<script src="{{ url_for('static', filename='js/habits.js') }}"></script>
+{% endblock %}

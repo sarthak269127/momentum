@@ -1,0 +1,184 @@
+/* ===========================
+   RESPONSIVE.CSS
+   =========================== */
+
+/* ── Large desktop (>1400px) ── */
+@media (min-width: 1400px) {
+  :root { --sidebar-w: 250px; }
+  .main { padding: 32px 36px; }
+  .stats-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* ── Tablet landscape / small laptop (<1100px) ── */
+@media (max-width: 1100px) {
+  .dashboard-body {
+    grid-template-columns: 1fr;
+  }
+  .dashboard-side {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  }
+}
+
+/* ── Tablet portrait (<900px) ── */
+@media (max-width: 900px) {
+  :root { --sidebar-w: 220px; }
+
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .pomo-page {
+    max-width: 100%;
+  }
+}
+
+/* ── Mobile / Small tablet (<768px) ── */
+@media (max-width: 768px) {
+
+  /* Sidebar becomes an overlay drawer */
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    z-index: 200;
+    transform: translateX(-100%);
+    width: var(--sidebar-w) !important;
+    min-width: var(--sidebar-w) !important;
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
+  }
+
+  .main-area {
+    width: 100%;
+  }
+
+  .menu-btn {
+    display: flex;
+  }
+
+  .topbar-page {
+    font-size: var(--text-base);
+  }
+
+  /* Reduce padding */
+  .main { padding: 14px; }
+  .topbar { padding: 0 14px; }
+  .flash-container { padding: 0 14px; padding-top: 10px; }
+
+  /* Stack stats */
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  /* Dashboard side panel full width */
+  .dashboard-side {
+    grid-template-columns: 1fr;
+  }
+
+  /* Full-width notes grid */
+  .notes-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Habits */
+  .habits-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Float timer moves down */
+  .float-timer {
+    bottom: 12px;
+    right: 12px;
+    width: 180px;
+  }
+
+  /* Modal */
+  .modal-box {
+    max-width: 100%;
+    padding: 20px 16px;
+  }
+
+  /* Calendar */
+  .cal-day { min-height: 60px; }
+  .cal-task-dot { display: none; }
+
+  /* Timer ring */
+  .pomo-ring-wrap {
+    width: 190px;
+    height: 190px;
+  }
+
+  .pomo-time { font-size: 2.2rem; }
+
+  /* Tasks */
+  .tasks-row { padding: 10px 10px; }
+  .task-notes { display: none; }
+
+  /* Page header */
+  .page-header { gap: 8px; }
+  .page-title { font-size: var(--text-xl); }
+}
+
+/* ── Very small mobile (<400px) ── */
+@media (max-width: 400px) {
+  .stats-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .filter-tabs {
+    gap: 4px;
+  }
+
+  .filter-tab {
+    padding: 5px 10px;
+    font-size: 0.7rem;
+  }
+
+  .pomo-ring-wrap {
+    width: 160px;
+    height: 160px;
+  }
+
+  .pomo-time { font-size: 1.9rem; }
+
+  .cd-units { grid-template-columns: repeat(2, 1fr); }
+
+  .float-timer { width: 160px; }
+  .float-timer-display { font-size: 1.2rem; }
+
+  .btn-primary { padding: 8px 14px; font-size: var(--text-xs); }
+}
+
+/* ── Ultra-wide (>1800px) ── */
+@media (min-width: 1800px) {
+  :root { --sidebar-w: 260px; }
+  .stats-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+  .notes-grid {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  }
+}
+
+/* ── Prevent horizontal overflow on all screens ── */
+.main-area, .main, .app {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+/* ── Scrollable tables on small screens ── */
+.table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ── Ensure images don't overflow ── */
+img, video, canvas, svg {
+  max-width: 100%;
+}

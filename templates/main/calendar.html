@@ -1,0 +1,121 @@
+{% extends "main/layout.html" %}
+{% block title %}Calendar – Momentum{% endblock %}
+{% block page_name %}Calendar{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+  <h1 class="page-title">Calendar</h1>
+</div>
+
+<!-- Month navigation -->
+<div class="calendar-nav">
+  <a href="{{ url_for('calendar.calendar', month=prev_month, year=prev_year) }}" class="btn-secondary" style="padding:8px 14px;">
+    <i class="fa-solid fa-chevron-left"></i>
+  </a>
+  <span class="cal-month-label">{{ month_label }}</span>
+  <a href="{{ url_for('calendar.calendar', month=next_month, year=next_year) }}" class="btn-secondary" style="padding:8px 14px;">
+    <i class="fa-solid fa-chevron-right"></i>
+  </a>
+</div>
+
+<!-- Calendar grid -->
+<div class="cal-grid">
+  {% for d in ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'] %}
+  <div class="cal-day-header">{{ d }}</div>
+  {% endfor %}
+
+  {% for _ in range(first_weekday) %}
+  <div class="cal-day empty"></div>
+  {% endfor %}
+
+  {% for day in days %}
+  <div class="cal-day {% if day.today %}today{% endif %}"
+       onclick="openDayPlanner('{{ day.date_str }}', '{{ day.number }}')">
+    <div class="cal-day-num">{{ day.number }}</div>
+    {% for task in day.tasks[:3] %}
+    <div class="cal-task-dot {% if task.completed %}done{% endif %}">
+      {{ task.title[:16] }}{% if task.title|length > 16 %}…{% endif %}
+    </div>
+    {% endfor %}
+    {% if day.tasks|length > 3 %}
+    <div class="cal-more">+{{ day.tasks|length - 3 }} more</div>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Day Planner Modal -->
+<div class="modal-overlay" id="dayPlannerModal">
+  <div class="modal-box" onclick="event.stopPropagation()" style="max-width:440px;">
+    <div class="modal-header">
+      <h2 id="plannerDate">Day Planner</h2>
+      <button class="modal-close" onclick="closeModal('dayPlannerModal')"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div id="plannerTaskList"></div>
+    <button class="btn-primary" style="width:100%;justify-content:center;margin-top:16px;" id="plannerAddBtn">
+      <i class="fa-solid fa-plus"></i> Add task for this day
+    </button>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+let plannerDate = null;
+
+async function openDayPlanner(dateStr, dayNum) {
+  plannerDate = dateStr;
+  document.getElementById('plannerDate').textContent = `Day ${dayNum}`;
+  openModal('dayPlannerModal');
+
+  const list = document.getElementById('plannerTaskList');
+  list.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:16px 0;">Loading…</p>';
+
+  try {
+    const data = await apiGet(`/calendar/day/${dateStr}`);
+    list.innerHTML = '';
+
+    if (!data.tasks.length) {
+      list.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:20px 0">No tasks on this day.</p>';
+      return;
+    }
+
+    data.tasks.forEach(t => {
+      const row = document.createElement('div');
+      row.className = `tasks-row ${t.completed ? 'done' : ''}`;
+      row.dataset.id   = t.id;
+      row.dataset.done = t.completed ? 'true' : 'false';
+      row.innerHTML = `
+        <div class="tasks-circle" onclick="plannerToggle(this.parentElement, ${t.id})" role="button" tabindex="0">
+          <i class="fa-solid fa-check"></i>
+        </div>
+        <div class="tasks-row-body">
+          <div class="tasks-row-top">
+            <span class="tasks-row-label">${t.title}</span>
+            <span class="task-priority priority-${t.priority}">${t.priority}</span>
+          </div>
+        </div>`;
+      list.appendChild(row);
+    });
+  } catch (e) {
+    list.innerHTML = '<p style="color:var(--danger);text-align:center;padding:16px">Failed to load tasks.</p>';
+  }
+}
+
+async function plannerToggle(row, id) {
+  try {
+    const res = await apiPost(`/tasks/toggle/${id}`);
+    row.dataset.done = res.completed ? 'true' : 'false';
+    row.classList.toggle('done', res.completed);
+  } catch (e) {
+    console.error('Toggle failed:', e);
+  }
+}
+
+document.getElementById('plannerAddBtn')?.addEventListener('click', () => {
+  if (plannerDate) window.location.href = `{{ url_for('tasks.tasks') }}?date=${plannerDate}`;
+});
+</script>
+{% endblock %}

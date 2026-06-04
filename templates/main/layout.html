@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Momentum — productivity app for tasks, habits, and focus">
+  <title>{% block title %}Momentum{% endblock %}</title>
+
+  {# CSRF token in a meta tag so JavaScript can read it without a form field #}
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+
+  {# Fonts and icons #}
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+
+  {# Application stylesheets #}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/layout.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/responsive.css') }}">
+
+  {% block head %}{% endblock %}
+</head>
+<body>
+
+<div class="app">
+
+  {# ── Sidebar navigation ── #}
+  <aside class="sidebar" id="sidebar" role="navigation" aria-label="Main navigation">
+    <div class="logo" aria-label="Momentum home">
+      <div class="logo-box" aria-hidden="true">M</div>
+      <span>Momentum</span>
+    </div>
+
+    <nav class="nav">
+      <a href="{{ url_for('routes.dashboard') }}"
+         class="{% if active=='dashboard' %}active{% endif %}"
+         aria-current="{% if active=='dashboard' %}page{% endif %}">
+        <i class="fa-solid fa-bars-staggered" aria-hidden="true"></i> Dashboard
+      </a>
+      <a href="{{ url_for('tasks.tasks') }}"
+         class="{% if active=='tasks' %}active{% endif %}"
+         aria-current="{% if active=='tasks' %}page{% endif %}">
+        <i class="fa-solid fa-check" aria-hidden="true"></i> Tasks
+      </a>
+      <a href="{{ url_for('habits.habits') }}"
+         class="{% if active=='habits' %}active{% endif %}"
+         aria-current="{% if active=='habits' %}page{% endif %}">
+        <i class="fa-solid fa-fire" aria-hidden="true"></i> Habits
+      </a>
+      <a href="{{ url_for('timer.timer') }}"
+         class="{% if active=='timer' %}active{% endif %}"
+         aria-current="{% if active=='timer' %}page{% endif %}">
+        <i class="fa-solid fa-stopwatch" aria-hidden="true"></i> Timer
+      </a>
+      <a href="{{ url_for('notes.notes') }}"
+         class="{% if active=='notes' %}active{% endif %}"
+         aria-current="{% if active=='notes' %}page{% endif %}">
+        <i class="fa-solid fa-file-lines" aria-hidden="true"></i> Notes
+      </a>
+      <a href="{{ url_for('calendar.calendar') }}"
+         class="{% if active=='calendar' %}active{% endif %}"
+         aria-current="{% if active=='calendar' %}page{% endif %}">
+        <i class="fa-solid fa-calendar" aria-hidden="true"></i> Calendar
+      </a>
+      <a href="{{ url_for('countdown.countdown') }}"
+         class="{% if active=='countdown' %}active{% endif %}"
+         aria-current="{% if active=='countdown' %}page{% endif %}">
+        <i class="fa-solid fa-hourglass-half" aria-hidden="true"></i> Countdown
+      </a>
+    </nav>
+
+    <div class="sidebar-bottom">
+      <a href="{{ url_for('auth.logout') }}" class="sidebar-logout">
+        <i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i> Logout
+      </a>
+    </div>
+  </aside>
+
+  {# Mobile sidebar overlay — clicking closes the sidebar #}
+  <div class="sidebar-overlay" id="sidebarOverlay" aria-hidden="true"></div>
+
+  {# ── Main content area ── #}
+  <div class="main-area">
+
+    {# Topbar #}
+    <header class="topbar" role="banner">
+      <div class="topbar-left">
+        <button class="menu-btn" id="menuBtn" aria-label="Toggle navigation menu"
+                aria-expanded="false" aria-controls="sidebar">
+          <i class="fa-solid fa-bars" aria-hidden="true"></i>
+        </button>
+        <span class="topbar-page" aria-live="polite">{% block page_name %}{% endblock %}</span>
+      </div>
+
+      <div class="top-right">
+        <div class="profile-dropdown">
+          <button class="icon-btn profile-btn" id="profileBtn"
+                  aria-label="Profile menu" aria-haspopup="true" aria-expanded="false">
+            <i class="fa-regular fa-circle-user" aria-hidden="true"></i>
+          </button>
+          <div class="dropdown-menu" role="menu">
+            <div class="dropdown-user">
+              <span>{{ current_user.username if current_user.is_authenticated else 'Guest' }}</span>
+              <small>{{ current_user.email if current_user.is_authenticated else '' }}</small>
+            </div>
+            <div class="dropdown-divider" role="separator"></div>
+            <a href="{{ url_for('routes.settings') }}" role="menuitem">
+              <i class="fa-solid fa-gear" aria-hidden="true"></i> Settings
+            </a>
+            <a href="{{ url_for('auth.logout') }}" class="logout" role="menuitem">
+              <i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i> Logout
+            </a>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    {# Flash messages #}
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="flash-container" id="flashContainer" role="status" aria-live="polite">
+      {% for category, message in messages %}
+      <div class="flash flash-{{ category }}" role="alert">
+        <i class="fa-solid {% if category=='success' %}fa-circle-check{% elif category=='error' %}fa-circle-exclamation{% else %}fa-circle-info{% endif %}"
+           aria-hidden="true"></i>
+        {{ message }}
+        <button class="flash-close" aria-label="Dismiss notification">
+          <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+        </button>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    {# Page content #}
+    <main class="main" id="main-content">
+      {% block content %}{% endblock %}
+    </main>
+
+  </div>{# /.main-area #}
+</div>{# /.app #}
+
+{# ── Floating Timer Widget ── #}
+{# Persists across all pages so users can time focus sessions from anywhere #}
+<aside id="floatingTimer" class="float-timer" aria-label="Floating timer widget">
+  <div class="float-timer-header" id="floatTimerToggle">
+    <span>
+      <i class="fa-solid fa-stopwatch" aria-hidden="true"></i>
+      <span id="floatLabel">Timer</span>
+    </span>
+    <button class="float-timer-collapse" id="floatCollapseBtn"
+            title="Collapse timer" aria-label="Collapse timer widget">
+      <i class="fa-solid fa-chevron-down" id="floatChevron" aria-hidden="true"></i>
+    </button>
+  </div>
+  <div class="float-timer-body" id="floatTimerBody">
+    <div class="float-timer-display" id="floatDisplay" aria-live="off">00:00</div>
+    <div class="float-timer-controls">
+      <button class="float-btn" id="floatPlayBtn" aria-label="Play or pause timer">
+        <i class="fa-solid fa-play" id="floatPlayIcon" aria-hidden="true"></i>
+      </button>
+      <button class="float-btn" id="floatResetBtn" aria-label="Reset timer">
+        <i class="fa-solid fa-rotate-left" aria-hidden="true"></i>
+      </button>
+      <a class="float-btn" href="{{ url_for('timer.timer') }}"
+         title="Open full timer" aria-label="Open full timer page">
+        <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true" style="font-size:.7rem;"></i>
+      </a>
+    </div>
+  </div>
+</aside>
+
+{# Delegated flash dismiss handler #}
+<script>
+document.addEventListener('click', function (e) {
+  if (e.target.closest('.flash-close')) {
+    e.target.closest('.flash')?.remove();
+  }
+});
+</script>
+
+{# Shared utilities must load before any page-specific scripts #}
+<script src="{{ url_for('static', filename='js/utils.js') }}"></script>
+<script src="{{ url_for('static', filename='js/float-timer.js') }}"></script>
+{% block scripts %}{% endblock %}
+
+</body>
+</html>

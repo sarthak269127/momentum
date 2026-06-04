@@ -1,0 +1,90 @@
+{% extends "main/layout.html" %}
+{% block title %}{{ note.title or 'Untitled' }} – Momentum{% endblock %}
+{% block page_name %}Notes{% endblock %}
+
+{% block content %}
+
+<div class="note-detail-layout">
+
+  <!-- Back + actions bar -->
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+    <a href="{{ url_for('notes.notes') }}" class="btn-secondary" style="padding:7px 14px;font-size:.85rem;">
+      <i class="fa-solid fa-arrow-left"></i> Notes
+    </a>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span class="note-save-status" id="autosaveIndicator">
+        <i class="fa-solid fa-cloud-check"></i> Saved
+      </span>
+      <button class="btn-danger" id="deleteNoteBtn" style="padding:7px 12px;">
+        <i class="fa-solid fa-trash"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- Title -->
+  <input type="text" id="noteTitle" class="note-title-input"
+         value="{{ note.title or '' }}" placeholder="Note title…" maxlength="200">
+
+  <!-- Content -->
+  <textarea id="noteContent" class="note-content-area"
+            placeholder="Start writing…">{{ note.content or '' }}</textarea>
+
+  <!-- Reminder section -->
+  <div class="note-meta-bar">
+    <label class="note-reminder-toggle">
+      <input type="checkbox" id="hasReminder" {% if note.has_reminder %}checked{% endif %}>
+      <i class="fa-solid fa-bell"></i> Set reminder
+    </label>
+
+    <div id="reminderDtWrap" style="{{ '' if note.has_reminder else 'display:none' }}">
+      <input type="datetime-local" id="reminderDatetime" class="note-reminder-dt"
+             value="{{ note.reminder_datetime.strftime('%Y-%m-%dT%H:%M') if note.reminder_datetime else '' }}">
+    </div>
+
+    {% if note.has_reminder and note.reminder_datetime %}
+    <span style="font-size:.8rem;color:#a5b4fc;">
+      <i class="fa-solid fa-clock"></i>
+      {{ note.reminder_datetime.strftime('%b %d, %Y at %H:%M') }}
+    </span>
+    {% endif %}
+
+    <button class="btn-secondary" id="testNotifBtn" style="margin-left:auto;padding:6px 12px;font-size:.8rem;">
+      <i class="fa-solid fa-bell"></i> Test
+    </button>
+  </div>
+
+</div>
+
+<!-- Delete Modal -->
+<div class="modal-overlay" id="deleteNoteModal">
+  <div class="modal-box" onclick="event.stopPropagation()" style="max-width:360px;">
+    <div class="modal-header">
+      <h2>Delete note?</h2>
+      <button class="modal-close" onclick="closeModal('deleteNoteModal')"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <p style="color:var(--text-secondary);margin-bottom:20px;font-size:.9rem;">This action cannot be undone.</p>
+
+    {% if note.has_reminder %}
+    <div class="modal-field">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+        <input type="checkbox" id="deleteTaskToo" style="accent-color:var(--accent);">
+        Also delete the linked reminder task
+      </label>
+    </div>
+    {% endif %}
+
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal('deleteNoteModal')">Cancel</button>
+      <button class="btn-danger" id="confirmDeleteNote">Delete</button>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  window.NOTE_ID = {{ note.id }};
+</script>
+<script src="{{ url_for('static', filename='js/note-detail.js') }}"></script>
+{% endblock %}

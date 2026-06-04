@@ -1,0 +1,38 @@
+{% extends "main/layout.html" %}
+{% block title %}Notes – Momentum{% endblock %}
+{% block page_name %}Notes{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+  <h1 class="page-title">Notes</h1>
+  <button class="btn-primary" id="openAddNote">
+    <i class="fa-solid fa-plus"></i> New Note
+  </button>
+</div>
+
+<div class="notes-grid" id="notesGrid">
+  {% for note in notes %}
+  <div class="note-card" data-id="{{ note.id }}" onclick="window.location.href='/notes/{{ note.id }}'">
+    <div class="note-card-title">{{ note.title or 'Untitled' }}</div>
+    <div class="note-card-preview">{{ note.content[:180] if note.content else 'Empty note…' }}</div>
+    <div class="note-card-footer">
+      <span class="note-card-date">{{ note.updated_at.strftime('%b %d') if note.updated_at else '' }}</span>
+      {% if note.has_reminder %}
+      <span class="note-reminder-badge"><i class="fa-solid fa-bell"></i> Reminder</span>
+      {% endif %}
+    </div>
+  </div>
+  {% else %}
+  <div class="empty-state" id="emptyNotes" style="grid-column:1/-1;">
+    <i class="fa-solid fa-file-lines"></i>
+    <p>No notes yet. Create your first one!</p>
+  </div>
+  {% endfor %}
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/notes.js') }}"></script>
+{% endblock %}

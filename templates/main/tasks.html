@@ -1,0 +1,132 @@
+{% extends "main/layout.html" %}
+{% block title %}Tasks – Momentum{% endblock %}
+{% block page_name %}Tasks{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+  <h1 class="page-title">Tasks</h1>
+  <button class="btn-primary" id="openAddTask">
+    <i class="fa-solid fa-plus"></i> Add Task
+  </button>
+</div>
+
+<!-- Filter Tabs -->
+<div class="filter-tabs">
+  <button class="filter-tab active" data-filter="all">All</button>
+  <button class="filter-tab" data-filter="today">Today</button>
+  <button class="filter-tab" data-filter="upcoming">Upcoming</button>
+  <button class="filter-tab" data-filter="overdue">Overdue</button>
+  <button class="filter-tab" data-filter="active">Active</button>
+  <button class="filter-tab" data-filter="completed">Completed</button>
+</div>
+
+<!-- Summary bar -->
+<div class="tasks-summary" id="tasksSummary"></div>
+
+<!-- Task list -->
+<div class="tasks-full-list" id="taskList">
+  {% set ns = namespace(current_date=None) %}
+  {% for task in tasks %}
+    {% if task.task_date != ns.current_date %}
+      {% set ns.current_date = task.task_date %}
+      <div class="tasks-date-group">
+        {% if task.task_date == today %}
+          <span class="date-group-label today-label"><i class="fa-solid fa-sun"></i> Today</span>
+        {% elif task.task_date < today %}
+          <span class="date-group-label overdue-label"><i class="fa-solid fa-triangle-exclamation"></i> {{ task.task_date.strftime('%b %d') }}</span>
+        {% else %}
+          <span class="date-group-label"><i class="fa-regular fa-calendar"></i> {{ task.task_date.strftime('%A, %b %d') }}</span>
+        {% endif %}
+      </div>
+    {% endif %}
+
+    <div class="tasks-row {% if task.completed %}done{% endif %}"
+         data-id="{{ task.id }}"
+         data-done="{{ 'true' if task.completed else 'false' }}"
+         data-due="{{ task.task_date.isoformat() }}"
+         data-priority="{{ task.priority }}">
+
+      <div class="tasks-circle" onclick="toggleTask(this.parentElement)" role="button" tabindex="0" aria-label="Toggle complete">
+        <i class="fa-solid fa-check"></i>
+      </div>
+
+      <div class="tasks-row-body" onclick="openEditTask({{ task.id }}, '{{ task.title|e }}', '{{ task.task_date.isoformat() }}', '{{ task.priority }}', '{{ task.description|e if task.description else '' }}')">
+        <div class="tasks-row-top">
+          <span class="tasks-row-label">{{ task.title }}</span>
+          <span class="task-priority priority-{{ task.priority }}">{{ task.priority }}</span>
+        </div>
+        <div class="tasks-row-meta">
+          <span class="task-due-badge {{ 'overdue' if task.task_date < today and not task.completed else ('today' if task.task_date == today else 'upcoming') }}">
+            <i class="fa-solid {{ 'fa-circle-exclamation' if task.task_date < today and not task.completed else ('fa-clock' if task.task_date == today else 'fa-calendar') }}"></i>
+            {{ 'Overdue' if task.task_date < today and not task.completed else ('Today' if task.task_date == today else task.task_date.strftime('%b %d')) }}
+          </span>
+          {% if task.description %}
+          <span class="task-notes">{{ task.description[:80] }}{% if task.description|length > 80 %}…{% endif %}</span>
+          {% endif %}
+        </div>
+      </div>
+
+      <button class="task-delete" onclick="deleteTask(event, {{ task.id }})" aria-label="Delete task">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+  {% else %}
+    <div class="empty-state" id="emptyMsg">
+      <i class="fa-solid fa-clipboard-list"></i>
+      <p>No tasks yet. Add your first one!</p>
+    </div>
+  {% endfor %}
+</div>
+
+<!-- Add / Edit Task Modal -->
+<div class="modal-overlay" id="addTaskModal">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <h2 id="modalHeading">New Task</h2>
+      <button class="modal-close" onclick="closeAddModal()" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+
+    <input type="hidden" id="editTaskId" value="">
+
+    <div class="modal-field">
+      <label for="newTaskTitle">Title</label>
+      <input type="text" id="newTaskTitle" placeholder="What needs to be done?" autocomplete="off" maxlength="200">
+    </div>
+
+    <div class="modal-field">
+      <label>Due Date</label>
+      <div class="date-chips" id="dateChips">
+        <button type="button" class="date-chip" data-chip="today">Today</button>
+        <button type="button" class="date-chip" data-chip="tomorrow">Tomorrow</button>
+        <button type="button" class="date-chip" data-chip="next-week">Next Week</button>
+      </div>
+      <input type="date" id="newTaskDate" class="form-input" style="margin-top:8px;">
+    </div>
+
+    <div class="modal-field">
+      <label for="newTaskPriority">Priority</label>
+      <select id="newTaskPriority" class="form-input">
+        <option value="low">Low</option>
+        <option value="medium" selected>Medium</option>
+        <option value="high">High</option>
+      </select>
+    </div>
+
+    <div class="modal-field">
+      <label for="newTaskDesc">Notes (optional)</label>
+      <textarea id="newTaskDesc" placeholder="Add details…" rows="3" maxlength="1000"></textarea>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeAddModal()">Cancel</button>
+      <button class="btn-primary" id="saveTaskBtn">Save Task</button>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/tasks.js') }}"></script>
+{% endblock %}

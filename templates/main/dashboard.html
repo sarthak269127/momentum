@@ -1,0 +1,207 @@
+{% extends "main/layout.html" %}
+{% block title %}Dashboard – Momentum{% endblock %}
+{% block page_name %}Dashboard{% endblock %}
+
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+
+<!-- Greeting -->
+<div class="dashboard-greeting">
+  <div class="greeting-text">
+    {% set hour = now.hour if now is defined else 12 %}
+    {% if hour < 12 %}Good morning{% elif hour < 17 %}Good afternoon{% else %}Good evening{% endif %},
+    {{ current_user.username }}! 👋
+  </div>
+  <div class="greeting-date">{{ date }}</div>
+</div>
+
+<!-- Stats grid -->
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-card-top">
+      <span class="stat-card-label">Tasks today</span>
+      <div class="stat-icon blue"><i class="fa-solid fa-check"></i></div>
+    </div>
+    <div class="stat-value">{{ completed_count }}<span style="font-size:1rem;color:var(--text-muted)">/{{ tasks_today }}</span></div>
+    <div class="stat-sub">{{ pending_count }} pending</div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-card-top">
+      <span class="stat-card-label">Focus time</span>
+      <div class="stat-icon purple"><i class="fa-solid fa-stopwatch"></i></div>
+    </div>
+    <div class="stat-value">{{ focus_time }}</div>
+    <div class="stat-sub">Today's sessions</div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-card-top">
+      <span class="stat-card-label">Best streak</span>
+      <div class="stat-icon orange"><i class="fa-solid fa-fire"></i></div>
+    </div>
+    <div class="stat-value">{{ streak }}<span style="font-size:1rem;color:var(--text-muted)"> days</span></div>
+    <div class="stat-sub">Top habit streak</div>
+  </div>
+
+  {% if overdue_count > 0 %}
+  <div class="stat-card">
+    <div class="stat-card-top">
+      <span class="stat-card-label">Overdue</span>
+      <div class="stat-icon red"><i class="fa-solid fa-triangle-exclamation"></i></div>
+    </div>
+    <div class="stat-value" style="color:var(--danger)">{{ overdue_count }}</div>
+    <div class="stat-sub">Need attention</div>
+  </div>
+  {% else %}
+  <div class="stat-card">
+    <div class="stat-card-top">
+      <span class="stat-card-label">All caught up</span>
+      <div class="stat-icon green"><i class="fa-solid fa-circle-check"></i></div>
+    </div>
+    <div class="stat-value" style="color:var(--success)">✓</div>
+    <div class="stat-sub">No overdue tasks</div>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Main body -->
+<div class="dashboard-body">
+
+  <!-- Left column -->
+  <div class="dashboard-main">
+
+    <!-- Today's tasks -->
+    <div class="todays-tasks-card">
+      <div class="card-header">
+        <h3><i class="fa-solid fa-sun" style="color:#f59e0b;margin-right:6px;"></i> Today's Tasks</h3>
+        <a href="{{ url_for('tasks.tasks') }}" class="card-link">View all →</a>
+      </div>
+
+      {% if tasks_today > 0 %}
+      <div class="task-progress-bar">
+        <div class="task-progress-fill" style="width: {{ ((completed_count / tasks_today) * 100)|int }}%"></div>
+      </div>
+      {% endif %}
+
+      {% if todays_tasks %}
+        {% for task in todays_tasks %}
+        <div class="dash-task-item" data-id="{{ task.id }}">
+          <div class="dash-task-check {% if task.completed %}done{% endif %}" role="button" tabindex="0" aria-label="Toggle task">
+            {% if task.completed %}<i class="fa-solid fa-check"></i>{% endif %}
+          </div>
+          <div class="dash-task-title {% if task.completed %}done{% endif %}">{{ task.title }}</div>
+          <span class="dash-task-priority {{ task.priority }}">{{ task.priority }}</span>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div style="text-align:center;padding:24px;color:var(--text-muted);font-size:.875rem;">
+          No tasks for today. <a href="{{ url_for('tasks.tasks') }}" style="color:var(--accent)">Add one →</a>
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Weekly focus chart -->
+    <div class="focus-chart-card">
+      <div class="card-header">
+        <h3><i class="fa-solid fa-chart-bar" style="color:var(--accent);margin-right:6px;"></i> Weekly Focus</h3>
+      </div>
+      <canvas id="weeklyChart" height="110"></canvas>
+    </div>
+
+  </div><!-- /.dashboard-main -->
+
+  <!-- Right column -->
+  <div class="dashboard-side">
+
+    <!-- Upcoming tasks -->
+    {% if upcoming_tasks %}
+    <div class="upcoming-card">
+      <div class="card-header">
+        <h3><i class="fa-regular fa-calendar" style="margin-right:6px;color:var(--info);"></i> Upcoming</h3>
+        <a href="{{ url_for('tasks.tasks') }}" class="card-link">View all →</a>
+      </div>
+      {% for task in upcoming_tasks %}
+      <div class="upcoming-item">
+        <div class="upcoming-dot {{ task.priority }}"></div>
+        <div class="upcoming-title">{{ task.title }}</div>
+        <div class="upcoming-date">{{ task.task_date.strftime('%b %d') }}</div>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Habits summary -->
+    {% if habits %}
+    <div class="habits-summary-card">
+      <div class="card-header">
+        <h3><i class="fa-solid fa-fire" style="color:#f97316;margin-right:6px;"></i> Today's Habits</h3>
+        <a href="{{ url_for('habits.habits') }}" class="card-link">View all →</a>
+      </div>
+      {% set due_habits = habits | selectattr('is_due_today') | list %}
+      {% if due_habits %}
+        {% for habit in due_habits %}
+        {% set done_today = habit.completions | selectattr('date', 'equalto', today) | list | length > 0 %}
+        <div class="habit-summary-row">
+          <div class="habit-icon-sm" style="background:{{ habit.color }}22;color:{{ habit.color }}">
+            <i class="{{ habit.icon }}"></i>
+          </div>
+          <div class="habit-name-sm">{{ habit.name }}</div>
+          <span class="habit-done-badge {% if done_today %}done{% else %}pending{% endif %}">
+            {% if done_today %}✓ Done{% else %}Pending{% endif %}
+          </span>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div style="color:var(--text-muted);font-size:.875rem;padding:8px 0;">No habits due today.</div>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Countdowns -->
+    {% if countdowns %}
+    <div class="dash-countdown-card">
+      <div class="card-header">
+        <h3><i class="fa-solid fa-hourglass-half" style="color:var(--accent2);margin-right:6px;"></i> Countdowns</h3>
+        <a href="{{ url_for('countdown.countdown') }}" class="card-link">View all →</a>
+      </div>
+      {% for cd in countdowns %}
+      {% set days_left = ((cd.target_date - now) if now is defined else none) %}
+      <div class="dash-countdown-item">
+        <div class="dash-cd-emoji">{{ cd.emoji }}</div>
+        <div class="dash-cd-title">{{ cd.title }}</div>
+        <div class="dash-cd-days" data-target="{{ cd.target_date.isoformat() }}">--d</div>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+  </div><!-- /.dashboard-side -->
+</div><!-- /.dashboard-body -->
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Expose weekly data for dashboard.js
+window.WEEKLY_FOCUS = {{ weekly_focus | tojson }};
+window.now = { hour: {{ now.hour }} };
+</script>
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+<script>
+// Live countdown days on dashboard
+(function() {
+  document.querySelectorAll('[data-target]').forEach(el => {
+    function update() {
+      const diff = new Date(el.dataset.target).getTime() - Date.now();
+      el.textContent = diff > 0 ? Math.floor(diff / 86400000) + 'd' : 'Today!';
+    }
+    update();
+    setInterval(update, 60000);
+  });
+})();
+</script>
+{% endblock %}

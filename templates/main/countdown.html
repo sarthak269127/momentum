@@ -1,0 +1,119 @@
+{% extends "main/layout.html" %}
+{% block title %}Countdown – Momentum{% endblock %}
+{% block page_name %}Countdowns{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+  <h1 class="page-title">Event Countdown</h1>
+  <button class="btn-primary" id="openAddCd">
+    <i class="fa-solid fa-plus"></i> Add Event
+  </button>
+</div>
+
+<div class="countdown-grid" id="countdownGrid">
+  {% for cd in countdowns %}
+  <div class="countdown-card" data-id="{{ cd.id }}" data-target="{{ cd.target_date.isoformat() }}">
+    <div class="cd-top">
+      <span class="cd-emoji">{{ cd.emoji }}</span>
+      <div class="cd-actions">
+        <button class="cd-edit-btn"
+          onclick="openEditCd({{ cd.id }}, '{{ cd.title|e }}', '{{ cd.target_date.strftime('%Y-%m-%dT%H:%M') }}', '{{ cd.emoji }}')"
+          aria-label="Edit">
+          <i class="fa-solid fa-pen"></i>
+        </button>
+        <button class="cd-delete-btn" onclick="deleteCd({{ cd.id }})" aria-label="Delete">
+          <i class="fa-solid fa-trash"></i>
+        </button>
+      </div>
+    </div>
+
+    <div class="cd-title">{{ cd.title }}</div>
+    <div class="cd-date">
+      <i class="fa-regular fa-calendar"></i>
+      {{ cd.target_date.strftime('%B %d, %Y') }}
+    </div>
+
+    <div class="cd-units">
+      <div class="cd-unit">
+        <span class="cd-num" data-unit="days">--</span>
+        <span class="cd-lbl">Days</span>
+      </div>
+      <div class="cd-unit">
+        <span class="cd-num" data-unit="hours">--</span>
+        <span class="cd-lbl">Hours</span>
+      </div>
+      <div class="cd-unit">
+        <span class="cd-num" data-unit="minutes">--</span>
+        <span class="cd-lbl">Mins</span>
+      </div>
+      <div class="cd-unit">
+        <span class="cd-num" data-unit="seconds">--</span>
+        <span class="cd-lbl">Secs</span>
+      </div>
+    </div>
+  </div>
+  {% else %}
+  <div class="empty-state" id="emptyCd" style="grid-column:1/-1">
+    <i class="fa-solid fa-hourglass-half"></i>
+    <p>No countdowns yet. Add an upcoming event!</p>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Add / Edit Modal -->
+<div class="modal-overlay" id="cdModal">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <h2 id="cdModalTitle">New Countdown</h2>
+      <button class="modal-close" onclick="closeCdModal()"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+
+    <input type="hidden" id="editCdId" value="">
+
+    <div class="modal-field">
+      <label for="cdTitle">Event name</label>
+      <input type="text" id="cdTitle" placeholder="e.g. My birthday" autocomplete="off" maxlength="200">
+    </div>
+
+    <div class="modal-field">
+      <label for="cdDate">Target date</label>
+      <input type="date" id="cdDate" class="form-input">
+    </div>
+
+    <div class="modal-field">
+      <label>Emoji</label>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
+        {% for e in ['🎯','🎂','🚀','✈️','💒','🏆','🎓','🎉','❤️','⏰'] %}
+        <button type="button" class="emoji-btn filter-tab" data-emoji="{{ e }}" style="font-size:1.1rem;padding:6px 10px;">{{ e }}</button>
+        {% endfor %}
+      </div>
+      <input type="text" id="cdEmoji" class="form-input" placeholder="or type one" maxlength="4" style="width:80px;">
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeCdModal()">Cancel</button>
+      <button class="btn-primary" id="saveCdBtn">Save</button>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/countdown.js') }}"></script>
+<script>
+// Emoji picker sync
+document.querySelectorAll('.emoji-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.emoji-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const cdEmojiIn = document.getElementById('cdEmoji');
+    if (cdEmojiIn) cdEmojiIn.value = btn.dataset.emoji;
+  });
+});
+document.getElementById('cdEmoji')?.addEventListener('input', function() {
+  document.querySelectorAll('.emoji-btn').forEach(b => b.classList.remove('active'));
+});
+</script>
+{% endblock %}

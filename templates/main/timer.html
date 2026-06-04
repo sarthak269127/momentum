@@ -1,0 +1,123 @@
+{% extends "main/layout.html" %}
+{% block title %}Timer – Momentum{% endblock %}
+{% block page_name %}Timer{% endblock %}
+
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+
+<div class="pomo-page">
+
+  <div class="pomo-heading">
+    <h1 class="page-title" style="text-align:center">Focus Timer</h1>
+    <p class="pomo-sub">Stay focused and productive</p>
+  </div>
+
+  <!-- Mode tabs -->
+  <div class="pomo-modes">
+    <button class="pomo-mode-btn active" id="modeTimerBtn" data-mode="timer">⏲ Timer</button>
+    <button class="pomo-mode-btn" id="modeStopwatchBtn" data-mode="stopwatch">⏱ Stopwatch</button>
+  </div>
+
+  <!-- Timer card -->
+  <div class="pomo-card">
+    <!-- SVG ring with gradient defs inline -->
+    <div class="pomo-ring-wrap">
+      <svg class="pomo-ring" viewBox="0 0 220 220" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="timerGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%"   stop-color="#5b5cff"/>
+            <stop offset="100%" stop-color="#7c5cff"/>
+          </linearGradient>
+        </defs>
+        <circle class="pomo-ring-bg" cx="110" cy="110" r="96"/>
+        <circle class="pomo-ring-progress" id="ringProgress" cx="110" cy="110" r="96"/>
+      </svg>
+      <div class="pomo-ring-inner">
+        <div class="pomo-time" id="pomoTime">25:00</div>
+        <div class="pomo-status" id="pomoStatus">Ready to start</div>
+      </div>
+    </div>
+
+    <!-- Duration input (timer mode only) -->
+    <div class="timer-input-row" id="timerInputRow">
+      <label for="timerMinutes">Duration:</label>
+      <input type="number" id="timerMinutes" class="timer-duration-input"
+             value="25" min="1" max="999">
+      <span style="color:var(--text-secondary);font-size:.85rem;">min</span>
+      <button id="setTimerBtn" class="pomo-btn-reset" style="padding:6px 14px;font-size:.82rem;">Set</button>
+    </div>
+
+    <div class="pomo-controls">
+      <button class="pomo-btn-play" id="pomoBtnPlay" aria-label="Play/Pause">
+        <i class="fa-solid fa-play" id="playIcon"></i>
+      </button>
+      <button class="pomo-btn-reset" id="pomoBtnReset" aria-label="Reset">
+        <i class="fa-solid fa-rotate-left"></i> Reset
+      </button>
+    </div>
+  </div>
+
+  <!-- Stats row -->
+  <div class="timer-stats">
+    <div class="timer-stat">
+      <div class="timer-stat-val" id="sessionsCount">{{ sessions_today }}</div>
+      <div class="timer-stat-label">Sessions today</div>
+    </div>
+    <div class="timer-stat">
+      <div class="timer-stat-val" id="focusToday">{{ (focus_secs_today // 60) }}m</div>
+      <div class="timer-stat-label">Focus today</div>
+    </div>
+    <div class="timer-stat">
+      <div class="timer-stat-val">{{ total_hours }}h</div>
+      <div class="timer-stat-label">Total hours</div>
+    </div>
+  </div>
+
+  <!-- Weekly chart -->
+  <div class="pomo-chart-card">
+    <div class="section-title">Weekly Focus (minutes)</div>
+    <canvas id="weeklyTimerChart" height="100"></canvas>
+  </div>
+
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Expose server data for timer.js
+  window._timerSessions   = {{ sessions_today }};
+  window._timerFocusSecs  = {{ focus_secs_today }};
+  window._timerWeeklyData = {{ weekly | tojson }};
+</script>
+<script src="{{ url_for('static', filename='js/timer.js') }}"></script>
+<script>
+// Weekly chart
+(function() {
+  const ctx = document.getElementById('weeklyTimerChart')?.getContext('2d');
+  if (!ctx || !window._timerWeeklyData) return;
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: window._timerWeeklyData.map(d => d.day),
+      datasets: [{
+        data:            window._timerWeeklyData.map(d => d.minutes),
+        backgroundColor: 'rgba(91,92,255,0.7)',
+        borderRadius:    6,
+        borderSkipped:   false,
+      }],
+    },
+    options: {
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } },
+        y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' }, beginAtZero: true },
+      },
+    },
+  });
+})();
+</script>
+{% endblock %}

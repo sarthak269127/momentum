@@ -1,0 +1,37 @@
+{% extends "main/layout.html" %}
+{% block title %}Settings – Momentum{% endblock %}
+{% block page_name %}Settings{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+  <h1 class="page-title">Settings</h1>
+</div>
+
+<div class="settings-card">
+  <div class="settings-row">
+    <div>
+      <div class="settings-label">Account</div>
+      <div class="settings-desc">{{ current_user.username }} · {{ current_user.email }}</div>
+    </div>
+  </div>
+
+  <div class="settings-row">
+    <div>
+      <div class="settings-label">Member since</div>
+      <div class="settings-desc">{{ current_user.created_at.strftime('%B %Y') if current_user.created_at else 'Unknown' }}</div>
+    </div>
+  </div>
+
+  <div class="settings-row">
+    <div>
+      <div class="settings-label">Sign out</div>
+      <div class="settings-desc">Log out of your Momentum account</div>
+    </div>
+    <a href="{{ url_for('auth.logout') }}" class="btn-danger" style="padding:8px 16px;font-size:.85rem;">
+      <i class="fa-solid fa-right-from-bracket"></i> Sign out
+    </a>
+  </div>
+</div>
+
+{% endblock %}
